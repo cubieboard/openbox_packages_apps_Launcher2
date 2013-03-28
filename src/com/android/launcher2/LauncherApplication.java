@@ -25,8 +25,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.os.Handler;
-import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityManager;
+import android.os.PowerManager;
 
 import java.lang.ref.WeakReference;
 
@@ -35,6 +34,7 @@ public class LauncherApplication extends Application {
     public IconCache mIconCache;
     private static boolean sIsScreenLarge;
     private static float sScreenDensity;
+    private PowerManager.WakeLock wlck;
     WeakReference<LauncherProvider> mLauncherProvider;
 
     @Override
@@ -74,6 +74,10 @@ public class LauncherApplication extends Application {
         ContentResolver resolver = getContentResolver();
         resolver.registerContentObserver(LauncherSettings.Favorites.CONTENT_URI, true,
                 mFavoritesObserver);
+
+	PowerManager power = (PowerManager) getSystemService(Context.POWER_SERVICE);
+	wlck = power.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "launcher2 lock");
+	wlck.acquire();
     }
 
     /**

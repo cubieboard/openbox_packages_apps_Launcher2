@@ -578,7 +578,12 @@ public final class Launcher extends Activity
                     if (mFirstTime) {
                         mFirstTime = false;
                     } else {
-                        workspace.post(mBuildLayersRunnable);
+                        // We delay the layer building a bit in order to give
+                        // other message processing a time to run.  In particular
+                        // this avoids a delay in hiding the IME if it was
+                        // currently shown, because doing that may involve
+                        // some communication back with the app.
+                        workspace.postDelayed(mBuildLayersRunnable, 500);
                         observer.removeOnPreDrawListener(this);
                     }
                     return true;
@@ -1398,11 +1403,6 @@ public final class Launcher extends Activity
         return mWorkspaceLoading || mWaitingForResult;
     }
 
-    private void addItems() {
-        showWorkspace(true);
-        showAddDialog();
-    }
-
     private void resetAddInfo() {
         mPendingAddInfo.container = ItemInfo.NO_ID;
         mPendingAddInfo.screen = -1;
@@ -1558,13 +1558,6 @@ public final class Launcher extends Activity
 
     void removeFolder(FolderInfo folder) {
         sFolders.remove(folder.id);
-    }
-
-    private void showNotifications() {
-        final StatusBarManager statusBar = (StatusBarManager) getSystemService(STATUS_BAR_SERVICE);
-        if (statusBar != null) {
-            statusBar.expand();
-        }
     }
 
     private void startWallpaper() {
@@ -2233,21 +2226,19 @@ public final class Launcher extends Activity
             scaleAnim.setInterpolator(new Workspace.ZoomOutInterpolator());
             scaleAnim.addUpdateListener(new LauncherAnimatorUpdateListener() {
                 public void onAnimationUpdate(float a, float b) {
-                    ((View) toView.getParent()).invalidate();
-                    toView.fastInvalidate();
-                    toView.setFastScaleX(a * scale + b * 1f);
-                    toView.setFastScaleY(a * scale + b * 1f);
+                    toView.setScaleX(a * scale + b * 1f);
+                    toView.setScaleY(a * scale + b * 1f);
                 }
             });
 
             toView.setVisibility(View.VISIBLE);
-            toView.setFastAlpha(0f);
+            toView.setAlpha(0f);
             ValueAnimator alphaAnim = ValueAnimator.ofFloat(0f, 1f).setDuration(fadeDuration);
             alphaAnim.setInterpolator(new DecelerateInterpolator(1.5f));
             alphaAnim.addUpdateListener(new LauncherAnimatorUpdateListener() {
                 public void onAnimationUpdate(float a, float b) {
                     // don't need to invalidate because we do so above
-                    toView.setFastAlpha(a * 0f + b * 1f);
+                    toView.setAlpha(a * 0f + b * 1f);
                 }
             });
             alphaAnim.setStartDelay(startDelay);
@@ -2358,9 +2349,8 @@ public final class Launcher extends Activity
             scaleAnim.setInterpolator(new Workspace.ZoomInInterpolator());
             scaleAnim.addUpdateListener(new LauncherAnimatorUpdateListener() {
                 public void onAnimationUpdate(float a, float b) {
-                    ((View)fromView.getParent()).fastInvalidate();
-                    fromView.setFastScaleX(a * oldScaleX + b * scaleFactor);
-                    fromView.setFastScaleY(a * oldScaleY + b * scaleFactor);
+                    fromView.setScaleX(a * oldScaleX + b * scaleFactor);
+                    fromView.setScaleY(a * oldScaleY + b * scaleFactor);
                 }
             });
             final ValueAnimator alphaAnim = ValueAnimator.ofFloat(0f, 1f);
@@ -2368,8 +2358,7 @@ public final class Launcher extends Activity
             alphaAnim.setInterpolator(new AccelerateDecelerateInterpolator());
             alphaAnim.addUpdateListener(new LauncherAnimatorUpdateListener() {
                 public void onAnimationUpdate(float a, float b) {
-                    // don't need to invalidate because we do so above
-                    fromView.setFastAlpha(a * 1f + b * 0f);
+                    fromView.setAlpha(a * 1f + b * 0f);
                 }
             });
             if (fromView instanceof LauncherTransitionable) {
@@ -2547,14 +2536,16 @@ public final class Launcher extends Activity
     /**
      * Shows the hotseat area.
      */
-    void showHotseat(boolean animated) {
-        if (!LauncherApplication.isScreenLarge()) {
-            if (animated) {
-                int duration = mSearchDropTargetBar.getTransitionInDuration();
-                mHotseat.animate().alpha(1f).setDuration(duration);
-            } else {
-                mHotseat.setAlpha(1f);
-            }
+    void showHotseat(boolean animated) {    	
+        if (!LauncherApplication.isScreenLarge()) {        
+        	if( mHotseat != null ) {
+        		if (animated) {
+                	int duration = mSearchDropTargetBar.getTransitionInDuration();
+                	mHotseat.animate().alpha(1f).setDuration(duration);
+            	} else {
+                	mHotseat.setAlpha(1f);
+            	}
+        	}
         }
     }
 
@@ -2563,12 +2554,14 @@ public final class Launcher extends Activity
      */
     void hideHotseat(boolean animated) {
         if (!LauncherApplication.isScreenLarge()) {
-            if (animated) {
-                int duration = mSearchDropTargetBar.getTransitionOutDuration();
-                mHotseat.animate().alpha(0f).setDuration(duration);
-            } else {
-                mHotseat.setAlpha(0f);
-            }
+        	if( mHotseat != null ) {
+        		if (animated) {
+                	int duration = mSearchDropTargetBar.getTransitionOutDuration();
+                	mHotseat.animate().alpha(0f).setDuration(duration);
+            	} else {
+                	mHotseat.setAlpha(0f);
+            	}        	
+        	}
         }
     }
 
@@ -2932,6 +2925,7 @@ public final class Launcher extends Activity
             final CellLayout layoutParent = (CellLayout) workspace.getChildAt(i);
             layoutParent.removeAllViewsInLayout();
         }
+        mWidgetsToAdvance.clear();
         if (mHotseat != null) {
             mHotseat.resetLayout();
         }

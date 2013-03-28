@@ -149,8 +149,8 @@ public class Workspace extends SmoothPagedView
     private SpringLoadedDragController mSpringLoadedDragController;
     private float mSpringLoadedShrinkFactor;
 
-    private static final int DEFAULT_CELL_COUNT_X = 4;
-    private static final int DEFAULT_CELL_COUNT_Y = 4;
+    private static final int DEFAULT_CELL_COUNT_X = 4;		//4
+    private static final int DEFAULT_CELL_COUNT_Y = 3;		//4
 
     // State variable that indicates whether the pages are small (ie when you're
     // in all apps or customize mode)
@@ -1521,8 +1521,6 @@ public class Workspace extends SmoothPagedView
         // We need to add extra padding to the bitmap to make room for the glow effect
         final int bitmapPadding = HolographicOutlineHelper.MAX_OUTER_BLUR_RADIUS;
 
-        CellLayout cl = (CellLayout) getChildAt(0);
-
         int[] size = estimateItemSize(info.spanX, info.spanY, info, false);
 
         // The outline is used to visualize where the item will land if dropped
@@ -1726,7 +1724,7 @@ public class Workspace extends SmoothPagedView
                     invalidate();
                     for (int i = 0; i < getChildCount(); i++) {
                         final CellLayout cl = (CellLayout) getChildAt(i);
-                        cl.fastInvalidate();
+                        cl.invalidate();
                         cl.setFastTranslationX(a * mOldTranslationXs[i] + b * mNewTranslationXs[i]);
                         cl.setFastTranslationY(a * mOldTranslationYs[i] + b * mNewTranslationYs[i]);
                         cl.setFastScaleX(a * mOldScaleXs[i] + b * mNewScaleXs[i]);
@@ -1736,6 +1734,7 @@ public class Workspace extends SmoothPagedView
                         cl.setBackgroundAlphaMultiplier(a * mOldBackgroundAlphaMultipliers[i] +
                                 b * mNewBackgroundAlphaMultipliers[i]);
                         cl.setFastAlpha(a * mOldAlphas[i] + b * mNewAlphas[i]);
+                        cl.invalidate();
                     }
                     syncChildrenLayersEnabledOnVisiblePages();
                 }
@@ -1872,9 +1871,6 @@ public class Workspace extends SmoothPagedView
      * Returns a new bitmap to be used as the object outline, e.g. to visualize the drop location.
      * Responsibility for the bitmap is transferred to the caller.
      */
-    private Bitmap createDragOutline(Bitmap orig, Canvas canvas, int padding, int w, int h) {
-        return createDragOutline(orig, canvas, padding, w, h, null);
-    }
     private Bitmap createDragOutline(Bitmap orig, Canvas canvas, int padding, int w, int h,
             Paint alphaClipPaint) {
         final int outlineColor = getResources().getColor(android.R.color.holo_blue_light);
@@ -3526,11 +3522,13 @@ public class Workspace extends SmoothPagedView
         mOverscrollFade = fade;
         float reducedFade = 0.5f + 0.5f * (1 - fade);
         final ViewGroup parent = (ViewGroup) getParent();
+        final ImageView qsbDivider = (ImageView) (parent.findViewById(R.id.qsb_divider));
         final ImageView dockDivider = (ImageView) (parent.findViewById(R.id.dock_divider));
         final ImageView scrollIndicator = getScrollingIndicator();
 
         cancelScrollingIndicatorAnimations();
-        dockDivider.setAlpha(reducedFade);
+        if (qsbDivider != null) qsbDivider.setAlpha(reducedFade);
+        if (dockDivider != null) dockDivider.setAlpha(reducedFade);
         scrollIndicator.setAlpha(1 - fade);
     }
 }

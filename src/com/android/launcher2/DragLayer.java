@@ -199,7 +199,6 @@ public class DragLayer extends FrameLayout {
 
     private void sendTapOutsideFolderAccessibilityEvent(boolean isEditingName) {
         if (AccessibilityManager.getInstance(mContext).isEnabled()) {
-            Folder currentFolder = mLauncher.getWorkspace().getOpenFolder();
             int stringId = isEditingName ? R.string.folder_tap_to_rename : R.string.folder_tap_to_close;
             AccessibilityEvent event = AccessibilityEvent.obtain(
                     AccessibilityEvent.TYPE_VIEW_FOCUSED);
@@ -633,6 +632,12 @@ public class DragLayer extends FrameLayout {
 
     @Override
     protected int getChildDrawingOrder(int childCount, int i) {
+        // We don't want to prioritize the workspace drawing on top of the other children in
+        // landscape for the overscroll event.
+        if (LauncherApplication.isScreenLandscape(getContext())) {
+            return super.getChildDrawingOrder(childCount, i);
+        }
+
         if (mWorkspaceIndex == -1 || mQsbIndex == -1 || 
                 mLauncher.getWorkspace().isDrawingBackgroundGradient()) {
             return i;
